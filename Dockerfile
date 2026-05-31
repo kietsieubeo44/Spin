@@ -1,36 +1,3 @@
-FROM node:20-bookworm-slim AS builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  python3 \
-  build-essential \
-  pkg-config \
-  libsqlite3-dev \
-  ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY package.json package-lock.json* ./
-RUN npm ci --production
-
-COPY . .
-
-FROM node:20-bookworm-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  libsqlite3-0 ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# copy app source and node_modules from builder
-COPY --from=builder /app /app
-
-ENV NODE_ENV=production
-
-EXPOSE 3000
-
-CMD ["node", "server.js"]
 FROM node:20-bullseye-slim AS builder
 WORKDIR /usr/src/app
 

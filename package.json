@@ -1,27 +1,6 @@
 {
   "name": "cosmo-golden-spin",
   "version": "1.0.0",
-  "description": "COSMO Golden Spin - premium event lucky wheel",
-  "main": "server.js",
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "dependencies": {
-    "better-sqlite3": "^8.4.0",
-    "csv-stringify": "^6.2.0",
-    "express": "^4.18.2",
-    "morgan": "^1.10.0",
-    "uuid": "^9.0.0"
-  },
-  "license": "MIT"
-}
-{
-  "name": "cosmo-golden-spin",
-  "version": "1.0.0",
   "description": "COSMO GOLDEN SPIN - Lucky Wheel System",
   "main": "server.js",
   "scripts": {

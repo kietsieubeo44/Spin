@@ -1,12 +1,4 @@
 [
-  { "reward": "100 FP", "weight": 20, "remaining": 200 },
-  { "reward": "200 FP", "weight": 15, "remaining": 120 },
-  { "reward": "300 FP", "weight": 12, "remaining": 60 },
-  { "reward": "500 FP", "weight": 8,  "remaining": 40 },
-  { "reward": "1000 FP", "weight": 2, "remaining": 10 },
-  { "reward": "2000 FP", "weight": 1, "remaining": 5 }
-]
-[
   { "reward": "100 FP", "weight": 20, "remaining": 999 },
   { "reward": "200 FP", "weight": 15, "remaining": 999 },
   { "reward": "300 FP", "weight": 12, "remaining": 999 },

@@ -1,29 +1,3 @@
-# COSMO Golden Spin
-
-Premium event lucky wheel for COSMO Anniversary. Designed for large vertical standees and kiosks.
-
-Run locally with Docker:
-
-```powershell
-docker compose up -d --build
-
-# open http://localhost:3000
-# admin: http://localhost:3000/admin
-```
-
-Project structure:
-- Dockerfile
-- docker-compose.yml
-- package.json
-- server.js
-- data/rewards.json
-- db/
-- exports/
-- public/
-  - index.html
-  - style.css
-  - app.js
-  - admin.html
 # COSMO GOLDEN SPIN
 
 Premium enterprise lucky wheel web application for COSMO Anniversary Celebration.

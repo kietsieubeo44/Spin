@@ -2,15 +2,13 @@ version: '3.8'
 services:
   app:
     build: .
-    image: cosmo-golden-spin:latest
-    ports:
-      - "3000:3000"
-    volumes:
-      - db-data:/app/db
-      - exports:/app/exports
-    environment:
-      NODE_ENV: production
+    image: cosmo-golden-spin_app:latest
     restart: unless-stopped
+    volumes:
+      - db-data:/usr/src/app/db
+      - exports:/usr/src/app/exports
+    environment:
+      - NODE_ENV=production
     networks:
       - cosmo-net
 
