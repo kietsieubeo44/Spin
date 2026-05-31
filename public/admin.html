@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - COSMO Golden Spin</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#041027;color:#fff;padding:24px}
+    .card{background:#06112a;padding:18px;border-radius:8px;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.06)}
+    button{padding:10px 14px;border-radius:6px;border:none;background:#d4af37;color:#051223;font-weight:700}
+  </style>
+  <script>
+    async function load(){
+      const d = await (await fetch('/api/dashboard')).json();
+      document.getElementById('spins').textContent = d.totalSpins;
+      document.getElementById('winners').textContent = d.totalWinners;
+      const tbody = document.getElementById('prizes'); tbody.innerHTML='';
+      d.prizes.forEach(p=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${p.reward}</td><td>${p.remaining}</td>`; tbody.appendChild(tr); });
+      const rows = await (await fetch('/api/winners')).json();
+      const wt = document.getElementById('winnersTable'); wt.innerHTML='';
+      rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.employee_id}</td><td>${r.reward}</td><td>${r.created_at}</td>`; wt.appendChild(tr); });
+    }
+    async function doExport(){ location.href='/api/export'; }
+    async function doReset(){ if(!confirm('Reset event and prizes?')) return; await fetch('/api/reset',{method:'POST'}); load(); }
+    window.addEventListener('load', load);
+  </script>
+</head>
+<body>
+  <h1>Admin - COSMO Golden Spin</h1>
+  <div class="card">Total Spins: <strong id="spins">0</strong> | Total Winners: <strong id="winners">0</strong></div>
+  <div class="card"><h3>Remaining Prizes</h3><table><thead><tr><th>Prize</th><th>Remaining</th></tr></thead><tbody id="prizes"></tbody></table></div>
+  <div class="card"><h3>Winners</h3><table><thead><tr><th>Employee</th><th>Reward</th><th>Time</th></tr></thead><tbody id="winnersTable"></tbody></table></div>
+  <div style="display:flex;gap:8px"><button onclick="doExport()">Export CSV</button><button onclick="doReset()">Reset Event</button></div>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin - COSMO GOLDEN SPIN</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="header"><div class="brand">COSMO ADMIN</div></header>
+  <main class="container">
+    <h2>Dashboard</h2>
+    <div id="stats"></div>
+    <div style="margin-top:12px">
+      <button id="exportBtn" class="btn">Export CSV/XLSX</button>
+      <button id="resetBtn" class="btn">Reset Event</button>
+    </div>
+    <h3>Winners</h3>
+    <table id="winners" style="width:100%;border-collapse:collapse;color:#fff"></table>
+  </main>
+  <script>
+    async function load(){
+      const d = await (await fetch('/api/dashboard')).json();
+      document.getElementById('stats').innerHTML = `Total Spins: ${d.totalSpins} | Total Winners: ${d.totalWinners}`;
+      const rows = await (await fetch('/api/winners')).json();
+      const tbl = document.getElementById('winners'); tbl.innerHTML='';
+      const h = document.createElement('tr'); h.innerHTML='<th>Employee ID</th><th>Reward</th><th>Claim Time</th>'; tbl.appendChild(h);
+      rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.employee_id}</td><td>${r.reward}</td><td>${r.created_at}</td>`; tbl.appendChild(tr); });
+    }
+    document.getElementById('exportBtn').addEventListener('click', async ()=>{ const res=await (await fetch('/api/export')).json(); window.open(res.csv); });
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{ if (!confirm('Reset event?')) return; await fetch('/api/reset',{method:'POST'}); alert('Reset done'); load(); });
+    load();
+  </script>
+</body>
+</html>

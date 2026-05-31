@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+db/
+exports/
+.env
+dist
+build
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.vscode
+.env
+logs
+**/tmp

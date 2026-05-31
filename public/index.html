@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+	<title>COSMO Golden Spin</title>
+	<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<!-- Stars and particles -->
+<div id="stars" class="stars" aria-hidden="true"></div>
+<div id="particles" class="particles" aria-hidden="true"></div>
+
+<div class="frame">
+
+	<!-- decorative corners -->
+	<div class="corner top-left"></div>
+	<div class="corner top-right"></div>
+	<div class="corner bottom-left"></div>
+	<div class="corner bottom-right"></div>
+
+	<!-- Header (18%) -->
+	<header class="header">
+		<div class="logo">COSMO</div>
+		<div class="sub-title">COSMO ANNIVERSARY</div>
+		<div class="main-title">GOLDEN SPIN</div>
+		<div class="celebration">CELEBRATION</div>
+	</header>
+
+	<!-- Wheel area (60%) -->
+	<div class="wheel-area" role="region" aria-label="Wheel area">
+		<div class="wheel-container">
+			<div class="wheel-shadow" aria-hidden="true"></div>
+			<div class="diamond" aria-hidden="true"></div>
+			<div class="pointer" aria-hidden="true"></div>
+			<div id="lightRing" class="light-ring" aria-hidden="true"></div>
+			<div class="base" aria-hidden="true"></div>
+			<div class="wheel" role="img" aria-label="Lucky Wheel">
+				<div id="segments" class="segments"></div>
+				<div class="center">
+					<h1>1</h1>
+					<p>YEAR<br/>ANNIVERSARY</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Controls (8%) -->
+	<div class="controls">
+		<button id="spinBtn" class="spin-btn" aria-label="Spin now">SPIN NOW</button>
+		<div id="result" class="result" aria-live="polite"></div>
+	</div>
+
+	<!-- Bottom decorations (14%) -->
+	<div class="gifts left-gifts" aria-hidden="true">
+		<div class="gift"></div>
+		<div class="coins"></div>
+	</div>
+	<div class="gifts right-gifts" aria-hidden="true">
+		<div class="gift"></div>
+		<div class="coins"></div>
+	</div>
+
+</div>
+
+<!-- ID Modal (shown after spin result to prompt for employee id) -->
+<div id="idModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="idModalTitle">
+	<div class="modal-card">
+		<h2 id="idModalTitle">Enter Employee ID</h2>
+		<p class="small">Please enter your Employee ID to validate before spinning.</p>
+		<input id="idInput" placeholder="EMP001" aria-label="Employee ID" />
+		<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
+			<button id="idValidate" class="btn">Validate</button>
+			<button id="idCancel" class="btn ghost">Cancel</button>
+		</div>
+		<div id="idError" style="color:#ffb3b3;margin-top:8px;min-height:18px"></div>
+	</div>
+</div>
+
+<!-- Winner Modal -->
+<div id="winnerModal" class="modal hidden" role="dialog" aria-modal="true">
+	<div class="modal-card">
+		<h2>🎉 CONGRATULATIONS 🎉</h2>
+		<p class="big">YOU WON</p>
+		<p id="winnerPrize" class="reward big"></p>
+		<div style="margin-top:10px;text-align:left">
+			<label for="claimEmployee">Employee ID</label>
+			<input id="claimEmployee" placeholder="EMP001" aria-label="Claim Employee ID" />
+			<div id="claimError" style="color:#ffb3b3;min-height:18px;margin-top:6px"></div>
+		</div>
+		<div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+			<button id="claimBtn" class="btn gold">CLAIM REWARD</button>
+			<button id="closeWinner" class="btn ghost">CLOSE</button>
+		</div>
+	</div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="modal hidden" role="dialog" aria-modal="true">
+	<div class="modal-card success-card">
+		<h2>SUCCESS</h2>
+		<p>Employee ID: <span id="sEmp"></span></p>
+		<p>Reward: <span id="sReward"></span></p>
+		<p>Claim Time: <span id="sTime"></span></p>
+		<p>Thank you for joining COSMO GOLDEN SPIN</p>
+		<div style="margin-top:12px;display:flex;justify-content:center">
+			<button id="closeSuccess" class="btn primary">CLOSE</button>
+		</div>
+	</div>
+</div>
+
+<!-- Confetti -->
+<div id="confetti" class="confetti" aria-hidden="true"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
+
