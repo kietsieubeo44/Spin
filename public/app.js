@@ -1,9 +1,10 @@
 /**
- * COSMO GOLDEN SPIN - Production-Ready Frontend
+ * COSMO GOLDEN SPIN - Production-Ready Frontend (WheelOfNames Style)
  * ================================================
  * Features:
- * - Mathematically accurate wheel algorithm
- * - Guaranteed pointer-segment alignment
+ * - Fixed segment structure with labels and weights
+ * - Weighted random selection
+ * - Pointer-based result determination
  * - Responsive design (mobile to 4K)
  * - Complete state management
  * - Accessibility compliant
@@ -13,10 +14,19 @@
 (function initApp() {
   "use strict";
 
-  // ==================== CONFIGURATION ====================
+  // ==================== WHEEL SEGMENTS (FIXED) ====================
+  const SEGMENTS = [
+    { label: "100 FP", weight: 40 },
+    { label: "200 FP", weight: 25 },
+    { label: "300 FP", weight: 15 },
+    { label: "500 FP", weight: 10 },
+    { label: "1000 FP", weight: 7 },
+    { label: "2000 FP", weight: 3 },
+  ];
+
   const CONFIG = {
     // Wheel settings
-    SEGMENT_COUNT: 14,
+    SEGMENT_COUNT: SEGMENTS.length,
     SPIN_DURATION: 6500, // milliseconds
     SPIN_EASING: "cubic-bezier(0.17, 0.67, 0.12, 0.99)",
     CONFETTI_COUNT: 35,
@@ -729,87 +739,3 @@
     init();
   }
 })();
-
-    ctx.closePath();
-    ctx.fillStyle = i%2===0 ? '#0b2540' : '#072036';
-    ctx.fill();
-    ctx.strokeStyle = '#b8860b'; ctx.lineWidth=4; ctx.stroke();
-    // text
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(start+ang/2);
-    ctx.textAlign='right'; ctx.fillStyle='#ffd36b'; ctx.font='bold '+Math.max(12, r*0.08)+'px Arial';
-    ctx.fillText(segments[i], r-20, 6);
-    ctx.restore();
-  }
-}
-
-function spinToSegment(segIndex, onEnd) {
-  const wheel = wheelCanvas;
-  const segAngle = 360/SEG_COUNT;
-  const half = segAngle/2;
-  const target = 360*6 + (segIndex*segAngle) + segAngle/2; // rotate to middle
-  // apply transform
-  wheel.style.transition = 'transform 5s cubic-bezier(.17,.67,.12,1)';
-  wheel.style.transform = `rotate(${target}deg)`;
-  wheel.addEventListener('transitionend', function te(){
-    wheel.style.transition='';
-    wheel.style.transform = `rotate(${(segIndex* -segAngle) + 0}deg)`;
-    wheel.removeEventListener('transitionend', te);
-    onEnd && onEnd();
-  });
-}
-
-checkBtn.addEventListener('click', async ()=>{
-  const emp = employeeEl.value.trim();
-  if (!emp) return alert('Enter Employee ID');
-  const res = await fetch('/api/check-id', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:emp})});
-  if (res.ok) { alert('Employee validated'); spinBtn.disabled=false; } else { const j=await res.json(); alert(j.error||'Invalid'); }
-});
-
-spinBtn.addEventListener('click', async ()=>{
-  const emp = employeeEl.value.trim();
-  if (!emp) return alert('Enter Employee ID');
-  spinBtn.disabled = true;
-  try {
-    const res = await fetch('/api/spin', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:emp})});
-    const j = await res.json();
-    if (!res.ok) { alert(j.error||'Spin failed'); spinBtn.disabled=false; return; }
-    // animate
-    spinToSegment(j.segment, ()=>{
-      modalReward.textContent = j.reward;
-      modalEmployee.textContent = emp;
-      modal.classList.remove('hidden');
-      launchConfetti();
-    });
-  } catch (err) { console.error(err); alert('Network error'); spinBtn.disabled=false; }
-});
-
-claimBtn.addEventListener('click', async ()=>{
-  const emp = employeeEl.value.trim();
-  const res = await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:emp})});
-  if (!res.ok) { alert('Claim not found'); return; }
-  const j = await res.json();
-  modal.classList.add('hidden');
-  sEmp.textContent = j.employee_id;
-  sReward.textContent = j.reward;
-  sTime.textContent = j.created_at;
-  success.classList.remove('hidden');
-});
-
-function launchConfetti(){
-  // simple confetti: create many colored divs
-  for (let i=0;i<40;i++){
-    const d = document.createElement('div');
-    d.style.position='fixed';
-    d.style.left=(50+Math.random()*200-100)+'%';
-    d.style.top='10%';
-    d.style.width='8px';d.style.height='14px';d.style.background=['#ffd36b','#e6c07a','#fff7d3'][Math.floor(Math.random()*3)];
-    d.style.opacity=0.95; d.style.transform=`rotate(${Math.random()*360}deg)`;
-    d.style.zIndex=9999; document.body.appendChild(d);
-    d.animate([{transform:'translateY(0) rotate(0)'},{transform:'translateY(500px) rotate(720deg)'}],{duration:1600+Math.random()*1200,iterations:1,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>d.remove();
-  }
-}
-
-window.addEventListener('resize', drawWheel);
-loadRewards().then(()=>{ drawWheel(); });
