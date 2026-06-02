@@ -1,103 +1,174 @@
-<!doctype html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Cosmo Golden Spin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="description" content="COSMO Golden Spin - Premium lucky wheel experience" />
+  <title>COSMO Golden Spin | Anniversary Celebration</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <!-- Ambient Background -->
+  <div class="stars" id="stars" aria-hidden="true"></div>
+  <div class="particles" id="particles" aria-hidden="true"></div>
+  <div class="confetti-container" id="confettiContainer" aria-hidden="true"></div>
 
-<!-- STARS -->
-<div class="stars" id="stars"></div>
+  <!-- Main Frame -->
+  <div class="frame" role="main">
+    <!-- Decorative Corners -->
+    <div class="corner corner--top-left" aria-hidden="true"></div>
+    <div class="corner corner--top-right" aria-hidden="true"></div>
+    <div class="corner corner--bottom-left" aria-hidden="true"></div>
+    <div class="corner corner--bottom-right" aria-hidden="true"></div>
 
-<!-- PARTICLES -->
-<div class="particles" id="particles"></div>
+    <!-- Header Section -->
+    <header class="header">
+      <div class="header__logo">COSMO</div>
+      <div class="header__subtitle">COSMO ANNIVERSARY</div>
+      <h1 class="header__title">GOLDEN SPIN</h1>
+      <div class="header__celebration">CELEBRATION</div>
+    </header>
 
-<div class="frame">
+    <!-- Background City Skyline -->
+    <div class="city city--left" aria-hidden="true">
+      <div class="tower tower--1"></div>
+      <div class="tower tower--2"></div>
+      <div class="tower tower--3"></div>
+    </div>
+    <div class="city city--right" aria-hidden="true">
+      <div class="tower tower--1"></div>
+      <div class="tower tower--2"></div>
+      <div class="tower tower--3"></div>
+    </div>
 
-<!-- CORNERS -->
-<div class="corner top-left"></div>
-<div class="corner top-right"></div>
-<div class="corner bottom-left"></div>
-<div class="corner bottom-right"></div>
+    <!-- Wheel Container -->
+    <div class="wheel-container" aria-label="Fortune wheel">
+      <div class="wheel-shadow" aria-hidden="true"></div>
+      <div class="light-ring" id="lightRing" aria-hidden="true"></div>
+      <div class="pointer" aria-hidden="true">
+        <span class="pointer__diamond"></span>
+      </div>
+      <div class="wheel" id="wheelEl">
+        <div class="wheel__segments" id="segmentsEl"></div>
+        <div class="wheel__center">
+          <h2 class="wheel__text">1<br><span>YEAR</span><br><span>ANNIVERSARY</span></h2>
+        </div>
+      </div>
+      <div class="wheel-base" aria-hidden="true"></div>
+    </div>
 
-<!-- HEADER -->
-<div class="header">
+    <!-- Decorative Gifts -->
+    <div class="gifts gifts--left" aria-hidden="true">
+      <div class="gift"></div>
+      <div class="coins"></div>
+    </div>
+    <div class="gifts gifts--right" aria-hidden="true">
+      <div class="gift"></div>
+      <div class="coins"></div>
+    </div>
 
-<div class="logo">COSMO</div>
-
-<div class="sub-title">COSMO ANNIVERSARY</div>
-
-<div class="main-title">GOLDEN SPIN</div>
-
-<div class="celebration">CELEBRATION</div>
-
-</div>
-
-<!-- CITY -->
-<div class="city city-left">
-  <div class="tower t1"></div>
-  <div class="tower t2"></div>
-  <div class="tower t3"></div>
-</div>
-
-<div class="city city-right">
-  <div class="tower t1"></div>
-  <div class="tower t2"></div>
-  <div class="tower t3"></div>
-</div>
-
-<!-- WHEEL -->
-<div class="wheel-container">
-  <div class="wheel-shadow"></div>
-  <div class="diamond"></div>
-  <div class="pointer"></div>
-  <div class="light-ring" id="lightRing"></div>
-  <div class="base"></div>
-  <div class="wheel">
-    <div class="segments" id="segments"></div>
-    <div class="center">
-      <h1>1</h1>
-      <p>YEAR<br>ANNIVERSARY</p>
+    <!-- Controls Section -->
+    <div class="controls">
+      <button
+        class="spin-btn"
+        id="spinBtn"
+        aria-label="Spin the wheel"
+        data-loading="false"
+      >
+        <span class="spin-btn__text">SPIN NOW</span>
+        <span class="spin-btn__loader" aria-hidden="true"></span>
+      </button>
+      <div class="result" id="resultEl" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
   </div>
-</div>
 
-<!-- GIFTS -->
-<div class="gifts left-gifts">
-  <div class="gift"></div>
-  <div class="coins"></div>
-</div>
+  <!-- MODALS -->
 
-<div class="gifts right-gifts">
-  <div class="gift"></div>
-  <div class="coins"></div>
-</div>
-
-<!-- CONTROLS -->
-<div class="controls">
-  <button class="spin-btn" id="spinBtn">SPIN NOW</button>
-  <div class="result" id="result"></div>
-</div>
-
-</div>
-
-<!-- ID Prompt Modal (not permanently visible) -->
-<div id="idModal" class="modal hidden">
-  <div class="modal-card">
-    <h2>Enter Employee ID</h2>
-    <p class="small">Please enter your Employee ID to validate before spinning.</p>
-    <input id="idInput" placeholder="EMP001" style="padding:10px;border-radius:8px;width:80%;margin-top:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff" />
-    <div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button id="idValidate" class="btn">Validate</button>
-      <button id="idCancel" class="btn ghost">Cancel</button>
+  <!-- ID Validation Modal -->
+  <div id="idModal" class="modal modal--hidden" role="dialog" aria-labelledby="idModalTitle" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__card">
+      <h2 id="idModalTitle" class="modal__title">Enter Employee ID</h2>
+      <p class="modal__description">Please enter your Employee ID to validate before spinning.</p>
+      <div class="modal__form">
+        <input
+          id="idInput"
+          class="modal__input"
+          type="text"
+          placeholder="EMP001"
+          maxlength="10"
+          autocomplete="off"
+          aria-label="Employee ID"
+          aria-describedby="idError"
+        />
+        <div id="idError" class="modal__error" role="alert" aria-live="polite"></div>
+      </div>
+      <div class="modal__actions">
+        <button id="idValidate" class="btn btn--primary" type="button">Validate</button>
+        <button id="idCancel" class="btn btn--secondary" type="button">Cancel</button>
+      </div>
     </div>
-    <div id="idError" style="color:#ffb3b3;margin-top:8px;min-height:18px"></div>
   </div>
-</div>
+
+  <!-- Winner Display Modal -->
+  <div id="winnerModal" class="modal modal--hidden" role="dialog" aria-labelledby="winnerModalTitle" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__card modal__card--winner">
+      <h2 id="winnerModalTitle" class="modal__title">🎉 YOU WON!</h2>
+      <div class="winner-display">
+        <div class="winner-display__label">Your Prize:</div>
+        <div class="winner-display__prize" id="winnerPrize" role="status" aria-live="polite">Loading...</div>
+      </div>
+      <div class="modal__form">
+        <label for="claimEmployee" class="modal__label">Confirm Employee ID:</label>
+        <input
+          id="claimEmployee"
+          class="modal__input"
+          type="text"
+          placeholder="EMP001"
+          maxlength="10"
+          autocomplete="off"
+          aria-label="Confirm Employee ID for claim"
+        />
+        <div id="claimError" class="modal__error" role="alert" aria-live="polite"></div>
+      </div>
+      <div class="modal__actions">
+        <button id="claimBtn" class="btn btn--primary" type="button">Claim Reward</button>
+        <button id="closeWinner" class="btn btn--secondary" type="button">Spin Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success/Claim Confirmation Modal -->
+  <div id="successModal" class="modal modal--hidden" role="dialog" aria-labelledby="successTitle" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__card modal__card--success">
+      <h2 id="successTitle" class="modal__title">✨ Claim Successful!</h2>
+      <div class="success-details">
+        <div class="success-detail">
+          <span class="success-detail__label">Employee ID:</span>
+          <span class="success-detail__value" id="sEmp"></span>
+        </div>
+        <div class="success-detail">
+          <span class="success-detail__label">Reward:</span>
+          <span class="success-detail__value success-detail__value--highlight" id="sReward"></span>
+        </div>
+        <div class="success-detail">
+          <span class="success-detail__label">Claimed At:</span>
+          <span class="success-detail__value" id="sTime"></span>
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button id="closeSuccess" class="btn btn--primary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
 
 <!-- Winner Modal -->
 <div id="winnerModal" class="modal hidden">
