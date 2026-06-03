@@ -90,19 +90,16 @@ init();
 function getRewards() {
   return db.prepare('SELECT id, reward, weight, remaining FROM rewards WHERE remaining > 0 ORDER BY id').all();
 }
-
+const segments = [
+  "100 FP",
+  "200 FP",
+  "300 FP",
+  "500 FP",
+  "1000 FP",
+  "2000 FP"
+];
 // Build segments array of length 14 by cycling through rewards (order from rewards table)
-function buildSegments() {
-  const all = db.prepare('SELECT reward FROM rewards ORDER BY id').all();
-  const pool = all.map(r => r.reward);
-  const segs = [];
-  let i = 0;
-  while (segs.length < 14) {
-    segs.push(pool[i % pool.length]);
-    i++;
-  }
-  return segs;
-}
+
 
 // Weighted select considering remaining > 0
 function selectWeightedReward() {
@@ -139,9 +136,18 @@ app.post('/api/spin', (req, res) => {
   if (!chosen) return res.status(500).json({ error: 'No rewards available' });
 
   // build segments and pick a segment index corresponding to chosen.reward
-  const segments = buildSegments();
-  const candidateIndexes = segments.map((v, idx) => v === chosen.reward ? idx : -1).filter(i => i >= 0);
-  const segment = candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
+  
+  const segments = [
+  "100 FP",
+  "200 FP",
+  "300 FP",
+  "500 FP",
+  "1000 FP",
+  "2000 FP"
+];
+
+const segment = segments.indexOf(chosen.reward);
+  
 
   const now = new Date().toISOString().replace('T', ' ').replace('Z','');
 

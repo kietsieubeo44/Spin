@@ -67,7 +67,7 @@
 
     // Wheel
     wheel: document.getElementById("wheelEl"),
-    segments: document.getElementById("segmentsEl"),
+    
     wheelCenter: document.querySelector(".wheel__center"),
 
     // Controls
@@ -95,21 +95,120 @@
     closeSuccess: document.getElementById("closeSuccess"),
   };
 
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
+function resizeCanvas() {
+
+    const rect =
+      canvas.getBoundingClientRect();
+
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+      drawWheel();
+  
+}
+function drawWheel() {
+
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 20;
+
+    const segmentAngle =
+        (Math.PI * 2) / SEGMENTS.length;
+
+    ctx.clearRect(0,0,size,size);
+
+    SEGMENTS.forEach((segment,index)=>{
+
+        const start =
+            index * segmentAngle;
+
+        const end =
+            start + segmentAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(center,center);
+
+        ctx.arc(
+            center,
+            center,
+            radius,
+            start,
+            end
+        );
+
+        ctx.closePath();
+
+        ctx.fillStyle =
+            SEGMENT_COLORS[
+                index % SEGMENT_COLORS.length
+            ];
+
+        ctx.fill();
+
+        ctx.strokeStyle =
+            "#ffd36b";
+
+        ctx.lineWidth = 4;
+
+        ctx.stroke();
+
+        drawLabel(
+            segment.label,
+            start,
+            end,
+            center,
+            radius
+        );
+
+    });
+
+}
+function drawLabel(label, start, end, center, radius) {
+
+    const angle = (start + end) / 2;
+
+    ctx.save();
+
+    ctx.translate(center, center);
+
+    ctx.rotate(angle + Math.PI / 2);
+
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.font =
+        `bold ${Math.max(18, radius * 0.08)}px Montserrat`;
+
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+
+    ctx.strokeText(
+        label,
+        radius * 0.72,
+        0
+    );
+
+    ctx.fillText(
+        label,
+        radius * 0.72,
+        0
+    );
+
+    ctx.restore();
+}
   // ==================== APPLICATION STATE ====================
   const STATE = {
     isSpinning: false,
     currentRotation: 0,
     employeeId: null,
-    rewards: [],
-    segmentMap: [], // Maps segment index to reward
-    lastSpinTime: 0,
-    animationFrameId: null,
   };
-
   // ==================== UTILITIES ====================
 
   /**
-   * Validates employee ID format
+   * validates employee ID format
    * @param {string} id - Employee ID
    * @returns {boolean}
    */
@@ -141,17 +240,76 @@
   }
 
   /**
-   * Calculates winning segment based on current wheel rotation
-   * Pointer is at top (0 degrees), so we calculate which segment is there
-   * @returns {number} Segment index (0-SEGMENT_COUNT)
+   * Calculates which segment is under the pointer after rotation
+   * Pointer is at top (0 degrees)
+   * @param {number} rotation - Total rotation in degrees
+   * @returns {number} Segment index under pointer
    */
-  function getWinningSegmentFromRotation(totalRotation) {
-    const normalizedRotation = normalizeAngle(totalRotation);
+  function getSegmentAtPointer(rotation) {
     const segmentAngle = 360 / CONFIG.SEGMENT_COUNT;
-    // Calculate which segment is at the pointer position
-    const segmentIndex = Math.round(normalizedRotation / segmentAngle) % CONFIG.SEGMENT_COUNT;
+    // normalize with center offset: compute which segment center is at pointer
+    const normalized = normalizeAngle(-rotation - segmentAngle / 2);
+    const segmentIndex = Math.round(normalized / segmentAngle) % CONFIG.SEGMENT_COUNT;
     return segmentIndex;
   }
+
+  /**
+   * Selects a random segment based on weighted probabilities
+   * @returns {number} Segment index (0 to SEGMENT_COUNT-1)
+   */
+
+  /**
+   * Rotates wheel to land on specified segment
+   * The segment will be directly under the pointer when spin completes
+   *param {number} targetSegmentIndex - Target segment (0 to SEGMENT_COUNT-1)
+   *returns {Promise}
+   */
+  async function rotateWheelToSegment(targetSegmentIndex) {
+  return new Promise((resolve) => {
+
+    if (STATE.isSpinning) {
+      resolve();
+      return;
+    }
+
+    STATE.isSpinning = true;
+
+    const segmentAngle =
+      360 / CONFIG.SEGMENT_COUNT;
+
+    const fullRotations =
+      5 + Math.floor(Math.random() * 2);
+
+    const centerAngle =
+      targetSegmentIndex * segmentAngle +
+      segmentAngle / 2;
+
+    const targetRotation =
+      fullRotations * 360 +
+      (360 - centerAngle);
+
+    STATE.currentRotation += targetRotation;
+
+    canvas.style.transition =
+      `transform ${CONFIG.SPIN_DURATION}ms ${CONFIG.SPIN_EASING}`;
+
+    canvas.style.transform =
+      `rotate(${STATE.currentRotation}deg)`;
+
+    setTimeout(() => {
+
+      STATE.isSpinning = false;
+
+      setButtonLoading(false);
+
+      resolve(targetSegmentIndex);
+
+    }, CONFIG.SPIN_DURATION);
+
+  }); }
+      
+
+   
 
   /**
    * Formats timestamp for display
@@ -225,73 +383,34 @@
   // ==================== WHEEL BUILDING ====================
 
   /**
-   * Builds wheel segments based on rewards from server
-   * @param {Array} rewardsList - List of rewards from server
+   * Builds wheel segments from SEGMENTS array
+   * Each segment shows its label directly
    */
-  function buildSegments(rewardsList) {
-    STATE.segmentMap = [];
-    DOM.segments.innerHTML = "";
-
-    if (!rewardsList || rewardsList.length === 0) {
-      console.error("No rewards available");
-      return;
-    }
-
-    // Create segment cycle: map rewards to segment indices
-    let rewardIndex = 0;
-    for (let i = 0; i < CONFIG.SEGMENT_COUNT; i++) {
-      const reward = rewardsList[rewardIndex % rewardsList.length];
-      STATE.segmentMap.push(reward);
-      rewardIndex++;
-    }
-
-    // Build segment DOM elements
-    const segmentAngle = 360 / CONFIG.SEGMENT_COUNT;
-
-    for (let i = 0; i < CONFIG.SEGMENT_COUNT; i++) {
-      const segment = document.createElement("div");
-      segment.className = "segment";
-      segment.style.background = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-      segment.style.transform = `rotate(${i * segmentAngle}deg) skewY(${90 - segmentAngle}deg)`;
-
-      const text = document.createElement("span");
-      text.className = "segment__text";
-      const reward = STATE.segmentMap[i];
-      text.textContent = reward;
-      text.style.transform = `skewY(-${90 - segmentAngle}deg) rotate(${segmentAngle / 2}deg)`;
-
-      segment.appendChild(text);
-      DOM.segments.appendChild(segment);
-    }
-
-    console.log("Segments built:", STATE.segmentMap);
-  }
+  
 
   /**
-   * Fetches rewards from server and builds segments
+   * Selects a random segment based on weighted probabilities
+   returns {number} Segment index (0 to SEGMENT_COUNT-1)
    */
-  async function loadRewards() {
-    try {
-      const response = await fetch("/api/dashboard");
-      const data = await response.json();
+  function selectRandomSegment() {
+    // Calculate total weight
+    const totalWeight = SEGMENTS.reduce((sum, seg) => sum + seg.weight, 0);
 
-      if (!Array.isArray(data.remaining)) {
-        throw new Error("Invalid rewards format");
+    // Generate random number between 0 and totalWeight
+    let random = Math.random() * totalWeight;
+
+    // Find segment based on weights
+    for (let i = 0; i < SEGMENTS.length; i++) {
+      random -= SEGMENTS[i].weight;
+      if (random <= 0) {
+        return i;
       }
-
-      // Extract reward names from remaining list
-      const rewardNames = data.remaining.map((r) => r.reward);
-      buildSegments(rewardNames);
-
-      return rewardNames;
-    } catch (error) {
-      console.error("Failed to load rewards:", error);
-      // Fallback to default rewards
-      const defaultRewards = ["100 FP", "200 FP", "300 FP", "500 FP", "1000 FP", "2000 FP"];
-      buildSegments(defaultRewards);
-      return defaultRewards;
     }
+
+    // Fallback to last segment (shouldn't happen)
+    return SEGMENTS.length - 1;
   }
+  
 
   // ==================== MODAL MANAGEMENT ====================
 
@@ -401,115 +520,12 @@
     }
   }
 
-  // ==================== WHEEL SPINNING LOGIC ====================
-
   /**
-   * Rotates wheel to specific segment with animation
-   * This is the core wheel algorithm
-   *
-   * Algorithm explanation:
-   * 1. Add 4-8 full rotations for dramatic effect
-   * 2. Calculate additional rotation to land on target segment
-   * 3. Ensure precise pointer-segment alignment
-   *
-   * Pointer position: top (0 degrees)
-   * Segment 0: starts at 0 degrees, ends at segmentAngle
-   * Final rotation must place target segment's CENTER at pointer
-   *
-   * @param {number} segmentIndex - Target segment index (0-13)
-   * @returns {Promise}
+   * Highlights the winning segment visually
+   * @param {number} index
    */
-  async function rotateWheelToSegment(segmentIndex) {
-    return new Promise((resolve) => {
-      if (STATE.isSpinning) {
-        console.warn("Spin already in progress");
-        resolve();
-        return;
-      }
 
-      STATE.isSpinning = true;
 
-      const segmentAngle = 360 / CONFIG.SEGMENT_COUNT;
-      const segmentCenter = segmentAngle / 2;
-
-      // Calculate target rotation
-      // Each segment is rotated by its index * segmentAngle
-      // We want the segment center to be at pointer (top = 0 degrees in the wheel's frame)
-      // So we need to rotate the wheel to move segment center to top
-
-      // Number of full rotations for visual effect (4-8 rotations)
-      const fullRotations = 4 + Math.floor(Math.random() * 5);
-      const fullRotationDegrees = fullRotations * 360;
-
-      // Additional rotation to land on segment
-      // Since pointer is at top and we rotate the wheel:
-      // - Wheel rotates clockwise
-      // - To bring segment at angle X to top, rotate by 360 - X
-      const additionalRotation = 360 - segmentIndex * segmentAngle;
-
-      const totalRotation = fullRotationDegrees + additionalRotation;
-      STATE.currentRotation += totalRotation;
-
-      // Apply animation
-      DOM.segments.style.transition = `transform ${CONFIG.SPIN_DURATION}ms ${CONFIG.SPIN_EASING}`;
-      DOM.segments.style.transform = `rotate(${STATE.currentRotation}deg)`;
-
-      // Handle animation end
-      const handleTransitionEnd = () => {
-        DOM.segments.style.transition = "";
-        DOM.segments.removeEventListener("transitionend", handleTransitionEnd);
-
-        STATE.isSpinning = false;
-
-        // Verify winning segment
-        const winningSegment = getWinningSegmentFromRotation(STATE.currentRotation);
-        console.log(`Winning segment verified: ${winningSegment}, expected: ${segmentIndex}`);
-
-        resolve(winningSegment);
-      };
-
-      DOM.segments.addEventListener("transitionend", handleTransitionEnd, { once: true });
-
-      // Timeout fallback (in case transitionend doesn't fire)
-      setTimeout(() => {
-        if (STATE.isSpinning) {
-          console.warn("Transition timeout - forcing resolution");
-          DOM.segments.removeEventListener("transitionend", handleTransitionEnd);
-          STATE.isSpinning = false;
-          resolve(segmentIndex);
-        }
-      }, CONFIG.SPIN_DURATION + 100);
-    });
-  }
-
-  /**
-   * Finds segments with specific reward
-   * @param {string} reward - Reward to find
-   * @returns {Array} Array of segment indices
-   */
-  function findSegmentsWithReward(reward) {
-    const indices = [];
-    for (let i = 0; i < STATE.segmentMap.length; i++) {
-      if (STATE.segmentMap[i] === reward) {
-        indices.push(i);
-      }
-    }
-    return indices;
-  }
-
-  /**
-   * Randomly selects a segment with the given reward
-   * @param {string} reward - Reward to match
-   * @returns {number} Segment index
-   */
-  function selectRandomSegmentForReward(reward) {
-    const candidates = findSegmentsWithReward(reward);
-    if (candidates.length === 0) {
-      console.error(`No segments found for reward: ${reward}`);
-      return Math.floor(Math.random() * CONFIG.SEGMENT_COUNT);
-    }
-    return candidates[Math.floor(Math.random() * candidates.length)];
-  }
 
   // ==================== BUTTON STATE MANAGEMENT ====================
 
@@ -590,10 +606,15 @@
     DOM.result.textContent = "";
 
     try {
+      // First, select a random segment locally based on weights
+      const targetSegmentIndex = selectRandomSegment();
+      const selectedSegment = SEGMENTS[targetSegmentIndex];
+
+      // Call API to record the spin (server can verify/log if needed)
       const response = await fetch("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId }),
+        body: JSON.stringify({ employeeId, segmentIndex: targetSegmentIndex }),
       });
 
       const data = await response.json();
@@ -602,23 +623,15 @@
         throw new Error(data.error || "Spin failed");
       }
 
-      const { reward, segment } = data;
-
-      // Validate segment is in range
-      const targetSegment =
-        typeof segment === "number" && segment >= 0 && segment < CONFIG.SEGMENT_COUNT
-          ? segment
-          : selectRandomSegmentForReward(reward);
-
-      // Rotate wheel
-      await rotateWheelToSegment(targetSegment);
+      // Rotate wheel to the selected segment
+      await rotateWheelToSegment(targetSegmentIndex);
 
       // Show win effects
       launchConfetti();
-      DOM.result.textContent = `🎉 YOU WON ${reward}`;
+      DOM.result.textContent = `🎉 YOU WON ${selectedSegment.label}`;
 
-      // Show winner modal
-      showWinnerModal(reward, employeeId);
+      // Show winner modal with the segment label as reward
+      showWinnerModal(selectedSegment.label, employeeId);
     } catch (error) {
       console.error("Spin error:", error);
       DOM.result.textContent = "❌ Spin failed. Please try again.";
@@ -714,19 +727,21 @@
 
   /**
    * Initializes the entire application
-   */
+   **/
   async function init() {
     console.log("Initializing COSMO Golden Spin...");
 
-    // Create background effects
     createStarField();
     createParticleField();
     createLightRing();
+    resizeCanvas();
 
-    // Load rewards and build wheel
-    await loadRewards();
+    window.addEventListener(
+     "resize",
+      resizeCanvas
+      );
+    
 
-    // Setup event listeners
     setupEventListeners();
 
     console.log("Application initialized successfully");
@@ -738,4 +753,5 @@
   } else {
     init();
   }
+  
 })();

@@ -50,12 +50,24 @@
       <div class="pointer" aria-hidden="true">
         <span class="pointer__diamond"></span>
       </div>
-      <div class="wheel" id="wheelEl">
-        <div class="wheel__segments" id="segmentsEl"></div>
-        <div class="wheel__center">
-          <h2 class="wheel__text">1<br><span>YEAR</span><br><span>ANNIVERSARY</span></h2>
-        </div>
-      </div>
+    <div class="wheel" id="wheelEl">
+
+  <canvas
+      id="wheelCanvas"
+      class="wheel__canvas"
+      width="1200"
+      height="1200">
+  </canvas>
+
+  <div class="wheel__center">
+    <h2 class="wheel__text">
+      1<br>
+      <span>YEAR</span><br>
+      <span>ANNIVERSARY</span>
+    </h2>
+  </div>
+
+</div>
       <div class="wheel-base" aria-hidden="true"></div>
     </div>
 

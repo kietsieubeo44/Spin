@@ -182,7 +182,8 @@ body::before {
   position: relative;
   z-index: 50;
   text-align: center;
-  padding-top: clamp(16px, 3vh, 32px);
+  /* reduced header height by ~35% */
+  padding-top: clamp(10px, 2vh, 20px);
   width: 100%;
 }
 
@@ -206,7 +207,8 @@ body::before {
 
 .header__title {
   font-family: "Cinzel", serif;
-  font-size: clamp(48px, 12vw, 120px);
+  /* reduced title size by ~20% */
+  font-size: clamp(38px, 9.6vw, 96px);
   font-weight: 900;
   line-height: 0.9;
   background: linear-gradient(
@@ -293,7 +295,8 @@ body::before {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: clamp(250px, 60vw, 850px);
+  /* increased wheel size by ~15% */
+  width: clamp(290px, 69vw, 977px);
   aspect-ratio: 1;
   max-height: 85vh;
 }
@@ -419,7 +422,13 @@ body::before {
   align-items: center;
   justify-content: center;
 }
-
+.wheel__canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+}
 /* Wheel Segments */
 .wheel__segments {
   width: 100%;
@@ -430,19 +439,7 @@ body::before {
   transform-origin: center;
 }
 
-.wheel__segments::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: linear-gradient(
-    120deg,
-    transparent 20%,
-    rgba(255, 255, 255, 0.4) 50%,
-    transparent 80%
-  );
-  animation: shine 4s linear infinite;
-}
+
 
 @keyframes shine {
   from {
@@ -453,37 +450,22 @@ body::before {
   }
 }
 
-.segment {
-  position: absolute;
-  width: 50%;
-  height: 50%;
-  top: 50%;
-  left: 50%;
-  transform-origin: 0% 0%;
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  border: clamp(2px, 0.3vw, 4px) solid rgba(255, 220, 120, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.segment__text {
-  position: absolute;
-  transform: translateX(-50%) translateY(-50%);
-  color: white;
-  font-size: clamp(10px, 2vw, 32px);
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
-  white-space: nowrap;
-  left: 75%;
-  top: 25%;
+
+
+/* Highlight when segment wins */
+.segment--winner {
+  box-shadow: 0 12px 40px rgba(255, 220, 120, 0.6), 0 0 30px rgba(255, 215, 0, 0.5) inset;
+  transform-origin: center;
+  z-index: 900;
 }
 
 /* Wheel Center */
 .wheel__center {
   position: absolute;
-  width: clamp(80px, 20vw, 280px);
-  height: clamp(80px, 20vw, 280px);
+  /* reduced center circle size by ~30% */
+  width: clamp(56px, 14vw, 196px);
+  height: clamp(56px, 14vw, 196px);
   border-radius: 50%;
   top: 50%;
   left: 50%;
