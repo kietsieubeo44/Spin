@@ -109,14 +109,16 @@ function resizeCanvas() {
 }
 function drawWheel() {
 
-    const size = canvas.width;
+    const size = Math.min(canvas.width, canvas.height);
     const center = size / 2;
-    const radius = center - 20;
+    const radius = center - Math.max(8, size * 0.025);
 
     const segmentAngle =
         (Math.PI * 2) / SEGMENTS.length;
 
-    ctx.clearRect(0,0,size,size);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let labelCount = 0;
 
     SEGMENTS.forEach((segment,index)=>{
 
@@ -126,32 +128,7 @@ function drawWheel() {
         const end =
             start + segmentAngle;
 
-        ctx.beginPath();
-        ctx.moveTo(center,center);
-
-        ctx.arc(
-            center,
-            center,
-            radius,
-            start,
-            end
-        );
-
-        ctx.closePath();
-
-        ctx.fillStyle =
-            SEGMENT_COLORS[
-                index % SEGMENT_COLORS.length
-            ];
-
-        ctx.fill();
-
-        ctx.strokeStyle =
-            "#ffd36b";
-
-        ctx.lineWidth = 4;
-
-        ctx.stroke();
+        drawSegment(index, start, end, center, radius);
 
         drawLabel(
             segment.label,
@@ -161,40 +138,85 @@ function drawWheel() {
             radius
         );
 
+        labelCount += 1;
+
     });
 
+    console.log(`Wheel labels rendered: ${labelCount}/${SEGMENTS.length}`);
+
 }
+
+function drawSegment(index, start, end, center, radius) {
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.moveTo(center,center);
+
+    ctx.arc(
+        center,
+        center,
+        radius,
+        start,
+        end
+    );
+
+    ctx.closePath();
+
+    ctx.fillStyle =
+        SEGMENT_COLORS[
+            index % SEGMENT_COLORS.length
+        ];
+
+    ctx.fill();
+
+    ctx.strokeStyle =
+        "#ffd36b";
+
+    ctx.lineWidth = Math.max(2, radius * 0.012);
+
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 function drawLabel(label, start, end, center, radius) {
 
     const angle = (start + end) / 2;
+    const textRadius = radius * 0.62;
+    const maxTextWidth = radius * 0.42;
+    const fontSize = Math.max(12, Math.min(30, radius * 0.085));
+
+    console.log("Drawing label:", label);
 
     ctx.save();
 
     ctx.translate(center, center);
 
-    ctx.rotate(angle + Math.PI / 2);
+    ctx.rotate(angle);
 
-    ctx.textAlign = "right";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     ctx.fillStyle = "#ffffff";
 
     ctx.font =
-        `bold ${Math.max(18, radius * 0.08)}px Montserrat`;
+        `bold ${fontSize}px Montserrat, Arial, sans-serif`;
 
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.lineWidth = Math.max(3, fontSize * 0.18);
 
     ctx.strokeText(
         label,
-        radius * 0.72,
-        0
+        textRadius,
+        0,
+        maxTextWidth
     );
 
     ctx.fillText(
         label,
-        radius * 0.72,
-        0
+        textRadius,
+        0,
+        maxTextWidth
     );
 
     ctx.restore();
@@ -245,12 +267,15 @@ function drawLabel(label, start, end, center, radius) {
    * @param {number} rotation - Total rotation in degrees
    * @returns {number} Segment index under pointer
    */
-  function getSegmentAtPointer(rotation) {
+  function getWinningSegment(rotation) {
     const segmentAngle = 360 / CONFIG.SEGMENT_COUNT;
-    // normalize with center offset: compute which segment center is at pointer
-    const normalized = normalizeAngle(-rotation - segmentAngle / 2);
-    const segmentIndex = Math.round(normalized / segmentAngle) % CONFIG.SEGMENT_COUNT;
-    return segmentIndex;
+    const pointerAngle = 270;
+    const wheelAngleAtPointer = normalizeAngle(pointerAngle - rotation);
+    return Math.floor(wheelAngleAtPointer / segmentAngle) % CONFIG.SEGMENT_COUNT;
+  }
+
+  function getSegmentAtPointer(rotation) {
+    return getWinningSegment(rotation);
   }
 
   /**
@@ -280,13 +305,17 @@ function drawLabel(label, start, end, center, radius) {
     const fullRotations =
       5 + Math.floor(Math.random() * 2);
 
+    const pointerAngle = 270;
     const centerAngle =
       targetSegmentIndex * segmentAngle +
       segmentAngle / 2;
-
+    const desiredRotation =
+      normalizeAngle(pointerAngle - centerAngle);
+    const rotationDelta =
+      normalizeAngle(desiredRotation - normalizeAngle(STATE.currentRotation));
     const targetRotation =
       fullRotations * 360 +
-      (360 - centerAngle);
+      rotationDelta;
 
     STATE.currentRotation += targetRotation;
 
@@ -302,7 +331,7 @@ function drawLabel(label, start, end, center, radius) {
 
       setButtonLoading(false);
 
-      resolve(targetSegmentIndex);
+      resolve(getWinningSegment(STATE.currentRotation));
 
     }, CONFIG.SPIN_DURATION);
 
@@ -606,15 +635,11 @@ function drawLabel(label, start, end, center, radius) {
     DOM.result.textContent = "";
 
     try {
-      // First, select a random segment locally based on weights
-      const targetSegmentIndex = selectRandomSegment();
-      const selectedSegment = SEGMENTS[targetSegmentIndex];
-
-      // Call API to record the spin (server can verify/log if needed)
+      // The server records and awards the prize. The wheel then lands on that exact segment.
       const response = await fetch("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, segmentIndex: targetSegmentIndex }),
+        body: JSON.stringify({ employeeId }),
       });
 
       const data = await response.json();
@@ -623,18 +648,34 @@ function drawLabel(label, start, end, center, radius) {
         throw new Error(data.error || "Spin failed");
       }
 
+      const targetSegmentIndex = Number(data.segment);
+      const awardedPrize = data.reward;
+      const selectedSegment = SEGMENTS[targetSegmentIndex];
+
+      if (!selectedSegment || selectedSegment.label !== awardedPrize) {
+        throw new Error("Awarded prize does not match a wheel segment");
+      }
+
       // Rotate wheel to the selected segment
-      await rotateWheelToSegment(targetSegmentIndex);
+      const winningSegmentIndex = await rotateWheelToSegment(targetSegmentIndex);
+      const winningSegment = SEGMENTS[winningSegmentIndex];
+
+      if (!winningSegment || winningSegment.label !== awardedPrize) {
+        throw new Error("Pointer winner does not match awarded prize");
+      }
 
       // Show win effects
       launchConfetti();
       DOM.result.textContent = `🎉 YOU WON ${selectedSegment.label}`;
 
-      // Show winner modal with the segment label as reward
-      showWinnerModal(selectedSegment.label, employeeId);
+      DOM.result.textContent = `YOU WON ${awardedPrize}`;
+
+      // Show winner modal with the exact server-awarded reward.
+      showWinnerModal(awardedPrize, employeeId);
     } catch (error) {
       console.error("Spin error:", error);
       DOM.result.textContent = "❌ Spin failed. Please try again.";
+      DOM.result.textContent = "Spin failed. Please try again.";
       setButtonLoading(false);
     }
   }
