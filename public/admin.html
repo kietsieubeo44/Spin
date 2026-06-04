@@ -23,7 +23,7 @@
       document.getElementById('stats').innerHTML = `Total Spins: ${d.totalSpins} | Total Winners: ${d.totalWinners}`;
       const rows = await (await fetch('/api/winners')).json();
       const tbl = document.getElementById('winners'); tbl.innerHTML='';
-      const h = document.createElement('tr'); h.innerHTML='<th>Employee ID</th><th>Reward</th><th>Claim Time</th>'; tbl.appendChild(h);
+      const h = document.createElement('tr'); h.innerHTML='<th>Player ID</th><th>Reward</th><th>Claim Time</th>'; tbl.appendChild(h);
       rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.employee_id}</td><td>${r.reward}</td><td>${r.created_at}</td>`; tbl.appendChild(tr); });
     }
     document.getElementById('exportBtn').addEventListener('click', async ()=>{ const res=await (await fetch('/api/export')).json(); window.open(res.csv); });

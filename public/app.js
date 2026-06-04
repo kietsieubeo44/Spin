@@ -1,798 +1,493 @@
-/**
- * COSMO GOLDEN SPIN - Production-Ready Frontend (WheelOfNames Style)
- * ================================================
- * Features:
- * - Fixed segment structure with labels and weights
- * - Weighted random selection
- * - Pointer-based result determination
- * - Responsive design (mobile to 4K)
- * - Complete state management
- * - Accessibility compliant
- * - Performance optimized
- */
-
-(function initApp() {
+(function initGoldenSpin() {
   "use strict";
 
-  // ==================== WHEEL SEGMENTS (FIXED) ====================
   const SEGMENTS = [
-    { label: "100 FP", weight: 40 },
-    { label: "200 FP", weight: 25 },
-    { label: "300 FP", weight: 15 },
-    { label: "500 FP", weight: 10 },
-    { label: "1000 FP", weight: 7 },
-    { label: "2000 FP", weight: 3 },
+    { label: "100 FP" },
+    { label: "200 FP" },
+    { label: "300 FP" },
+    { label: "500 FP" },
+    { label: "1000 FP" },
+    { label: "2000 FP" },
+  ];
+
+  const SEGMENT_COLORS = [
+    ["#7b0017", "#d1113f", "#ff6b88"],
+    ["#061a3a", "#1454b8", "#5fa6ff"],
+    ["#2d1200", "#a45d08", "#ffd36a"],
+    ["#061f18", "#0c7a51", "#60ffc0"],
+    ["#240046", "#7b2cbf", "#d7a8ff"],
+    ["#3b0900", "#cc3b11", "#ffb15e"],
   ];
 
   const CONFIG = {
-    // Wheel settings
-    SEGMENT_COUNT: SEGMENTS.length,
-    SPIN_DURATION: 6500, // milliseconds
-    SPIN_EASING: "cubic-bezier(0.17, 0.67, 0.12, 0.99)",
-    CONFETTI_COUNT: 35,
-    CONFETTI_DURATION_MIN: 1200,
-    CONFETTI_DURATION_MAX: 1800,
-
-    // Animation settings
-    MODAL_ANIMATION_DURATION: 300,
-    LIGHTS_PULSE_DURATION: 2400,
-    LIGHTS_ROTATION_DURATION: 10000,
-
-    // Timing constants
-    DEBOUNCE_DELAY: 300,
-    ANIMATION_FRAME_RATE: 60,
+    spinDuration: 6800,
+    spinEasing: "cubic-bezier(0.12, 0.74, 0.08, 1)",
+    minEmployeeLength: 1,
+    maxEmployeeLength: 24,
+    confettiCount: 130,
+    coinCount: 46,
   };
 
-  // Color palette - used for segments
-  const SEGMENT_COLORS = [
-    "#ff006e",
-    "#2dc653",
-    "#8338ec",
-    "#fb5607",
-    "#3a86ff",
-    "#38b000",
-    "#ffbe0b",
-    "#fb5607",
-  ];
+  const state = {
+    employeeId: "",
+    currentRotation: 0,
+    isSpinning: false,
+  };
 
-  const CONFETTI_COLORS = ["#ffd36b", "#e6c07a", "#fff7d3"];
-
-  // ==================== DOM ELEMENTS ====================
-  const DOM = {
-    // Containers
+  const dom = {
     stars: document.getElementById("stars"),
     particles: document.getElementById("particles"),
     lightRing: document.getElementById("lightRing"),
-    confettiContainer: document.getElementById("confettiContainer"),
-
-    // Wheel
-    wheel: document.getElementById("wheelEl"),
-    
-    wheelCenter: document.querySelector(".wheel__center"),
-
-    // Controls
+    confetti: document.getElementById("confettiContainer"),
+    coins: document.getElementById("coinContainer"),
+    canvas: document.getElementById("wheelCanvas"),
     spinBtn: document.getElementById("spinBtn"),
     result: document.getElementById("resultEl"),
-
-    // Modals
     idModal: document.getElementById("idModal"),
-    idInput: document.getElementById("idInput"),
-    idValidate: document.getElementById("idValidate"),
-    idCancel: document.getElementById("idCancel"),
+    idDisplay: document.getElementById("idDisplay"),
     idError: document.getElementById("idError"),
-
+    idConfirm: document.getElementById("idConfirm"),
+    idCancel: document.getElementById("idCancel"),
     winnerModal: document.getElementById("winnerModal"),
     winnerPrize: document.getElementById("winnerPrize"),
-    claimEmployee: document.getElementById("claimEmployee"),
-    claimBtn: document.getElementById("claimBtn"),
+    winnerEmployee: document.getElementById("winnerEmployee"),
     closeWinner: document.getElementById("closeWinner"),
-    claimError: document.getElementById("claimError"),
-
-    successModal: document.getElementById("successModal"),
-    sEmp: document.getElementById("sEmp"),
-    sReward: document.getElementById("sReward"),
-    sTime: document.getElementById("sTime"),
-    closeSuccess: document.getElementById("closeSuccess"),
   };
 
-const canvas = document.getElementById("wheelCanvas");
-const ctx = canvas.getContext("2d");
-function resizeCanvas() {
+  const ctx = dom.canvas.getContext("2d");
 
-    const rect =
-      canvas.getBoundingClientRect();
-
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-      drawWheel();
-  
-}
-function drawWheel() {
-
-    const size = Math.min(canvas.width, canvas.height);
-    const center = size / 2;
-    const radius = center - Math.max(8, size * 0.025);
-
-    const segmentAngle =
-        (Math.PI * 2) / SEGMENTS.length;
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    let labelCount = 0;
-
-    SEGMENTS.forEach((segment,index)=>{
-
-        const start =
-            index * segmentAngle;
-
-        const end =
-            start + segmentAngle;
-
-        drawSegment(index, start, end, center, radius);
-
-        drawLabel(
-            segment.label,
-            start,
-            end,
-            center,
-            radius
-        );
-
-        labelCount += 1;
-
-    });
-
-    console.log(`Wheel labels rendered: ${labelCount}/${SEGMENTS.length}`);
-
-}
-
-function drawSegment(index, start, end, center, radius) {
-    ctx.save();
-
-    ctx.beginPath();
-    ctx.moveTo(center,center);
-
-    ctx.arc(
-        center,
-        center,
-        radius,
-        start,
-        end
-    );
-
-    ctx.closePath();
-
-    ctx.fillStyle =
-        SEGMENT_COLORS[
-            index % SEGMENT_COLORS.length
-        ];
-
-    ctx.fill();
-
-    ctx.strokeStyle =
-        "#ffd36b";
-
-    ctx.lineWidth = Math.max(2, radius * 0.012);
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-function drawLabel(label, start, end, center, radius) {
-
-    const angle = (start + end) / 2;
-    const textRadius = radius * 0.62;
-    const maxTextWidth = radius * 0.42;
-    const fontSize = Math.max(12, Math.min(30, radius * 0.085));
-
-    console.log("Drawing label:", label);
-
-    ctx.save();
-
-    ctx.translate(center, center);
-
-    ctx.rotate(angle);
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    ctx.fillStyle = "#ffffff";
-
-    ctx.font =
-        `bold ${fontSize}px Montserrat, Arial, sans-serif`;
-
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.lineWidth = Math.max(3, fontSize * 0.18);
-
-    ctx.strokeText(
-        label,
-        textRadius,
-        0,
-        maxTextWidth
-    );
-
-    ctx.fillText(
-        label,
-        textRadius,
-        0,
-        maxTextWidth
-    );
-
-    ctx.restore();
-}
-  // ==================== APPLICATION STATE ====================
-  const STATE = {
-    isSpinning: false,
-    currentRotation: 0,
-    employeeId: null,
-  };
-  // ==================== UTILITIES ====================
-
-  /**
-   * validates employee ID format
-   * @param {string} id - Employee ID
-   * @returns {boolean}
-   */
-  function isValidEmployeeId(id) {
-    return /^emp\d{3}$/i.test((id || "").trim());
-  }
-
-  /**
-   * Creates debounced function
-   * @param {Function} fn - Function to debounce
-   * @param {number} delay - Delay in milliseconds
-   * @returns {Function}
-   */
-  function debounce(fn, delay) {
-    let timeoutId = null;
-    return function debounced(...args) {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => fn(...args), delay);
-    };
-  }
-
-  /**
-   * Normalizes angle to 0-360 range
-   * @param {number} angle - Angle in degrees
-   * @returns {number}
-   */
   function normalizeAngle(angle) {
     return ((angle % 360) + 360) % 360;
   }
 
-  /**
-   * Calculates which segment is under the pointer after rotation
-   * Pointer is at top (0 degrees)
-   * @param {number} rotation - Total rotation in degrees
-   * @returns {number} Segment index under pointer
-   */
-  function getWinningSegment(rotation) {
-    const segmentAngle = 360 / CONFIG.SEGMENT_COUNT;
-    const pointerAngle = 270;
-    const wheelAngleAtPointer = normalizeAngle(pointerAngle - rotation);
-    return Math.floor(wheelAngleAtPointer / segmentAngle) % CONFIG.SEGMENT_COUNT;
+  function setLoading(isLoading) {
+    state.isSpinning = isLoading;
+    dom.spinBtn.disabled = isLoading;
+    dom.spinBtn.dataset.loading = String(isLoading);
   }
 
-  function getSegmentAtPointer(rotation) {
-    return getWinningSegment(rotation);
-  }
-
-  /**
-   * Selects a random segment based on weighted probabilities
-   * @returns {number} Segment index (0 to SEGMENT_COUNT-1)
-   */
-
-  /**
-   * Rotates wheel to land on specified segment
-   * The segment will be directly under the pointer when spin completes
-   *param {number} targetSegmentIndex - Target segment (0 to SEGMENT_COUNT-1)
-   *returns {Promise}
-   */
-  async function rotateWheelToSegment(targetSegmentIndex) {
-  return new Promise((resolve) => {
-
-    if (STATE.isSpinning) {
-      resolve();
-      return;
-    }
-
-    STATE.isSpinning = true;
-
-    const segmentAngle =
-      360 / CONFIG.SEGMENT_COUNT;
-
-    const fullRotations =
-      5 + Math.floor(Math.random() * 2);
-
-    const pointerAngle = 270;
-    const centerAngle =
-      targetSegmentIndex * segmentAngle +
-      segmentAngle / 2;
-    const desiredRotation =
-      normalizeAngle(pointerAngle - centerAngle);
-    const rotationDelta =
-      normalizeAngle(desiredRotation - normalizeAngle(STATE.currentRotation));
-    const targetRotation =
-      fullRotations * 360 +
-      rotationDelta;
-
-    STATE.currentRotation += targetRotation;
-
-    canvas.style.transition =
-      `transform ${CONFIG.SPIN_DURATION}ms ${CONFIG.SPIN_EASING}`;
-
-    canvas.style.transform =
-      `rotate(${STATE.currentRotation}deg)`;
-
-    setTimeout(() => {
-
-      STATE.isSpinning = false;
-
-      setButtonLoading(false);
-
-      resolve(getWinningSegment(STATE.currentRotation));
-
-    }, CONFIG.SPIN_DURATION);
-
-  }); }
-      
-
-   
-
-  /**
-   * Formats timestamp for display
-   * @param {string} isoString - ISO timestamp
-   * @returns {string}
-   */
-  function formatTimestamp(isoString) {
-    const date = new Date(isoString);
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }
-
-  // ==================== BACKGROUND ANIMATION ====================
-
-  /**
-   * Creates background star field
-   */
-  function createStarField() {
-    const starCount = Math.min(300, window.innerWidth > 1024 ? 300 : 150);
-    for (let i = 0; i < starCount; i++) {
-      const star = document.createElement("div");
-      star.className = "star";
-      star.style.left = Math.random() * 100 + "%";
-      star.style.top = Math.random() * 100 + "%";
-      star.style.animationDelay = Math.random() * 3 + "s";
-      DOM.stars.appendChild(star);
-    }
-  }
-
-  /**
-   * Creates background particle effects
-   */
-  function createParticleField() {
-    const particleCount = Math.min(180, window.innerWidth > 1024 ? 180 : 100);
-    const particleColors = ["#ffd700", "#ff006e", "#00d4ff", "#7bff00"];
-    for (let i = 0; i < particleCount; i++) {
-      const p = document.createElement("div");
-      p.className = "particle";
-      p.style.left = Math.random() * 100 + "%";
-      p.style.animationDelay = Math.random() * 5 + "s";
-      p.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
-      DOM.particles.appendChild(p);
-    }
-  }
-
-  /**
-   * Creates rotating lights ring
-   */
-  function createLightRing() {
-    const lightCount = window.innerWidth > 768 ? 64 : 32;
-    const radius = window.innerWidth > 768 ? 430 : 250;
-
-    for (let i = 0; i < lightCount; i++) {
-      const light = document.createElement("div");
-      light.className = "light";
-      const angle = (360 / lightCount) * i;
-      const x = Math.cos((angle * Math.PI) / 180) * radius;
-      const y = Math.sin((angle * Math.PI) / 180) * radius;
-      light.style.left = `calc(50% + ${x}px)`;
-      light.style.top = `calc(50% + ${y}px)`;
-      DOM.lightRing.appendChild(light);
-    }
-  }
-
-  // ==================== WHEEL BUILDING ====================
-
-  /**
-   * Builds wheel segments from SEGMENTS array
-   * Each segment shows its label directly
-   */
-  
-
-  /**
-   * Selects a random segment based on weighted probabilities
-   returns {number} Segment index (0 to SEGMENT_COUNT-1)
-   */
-  function selectRandomSegment() {
-    // Calculate total weight
-    const totalWeight = SEGMENTS.reduce((sum, seg) => sum + seg.weight, 0);
-
-    // Generate random number between 0 and totalWeight
-    let random = Math.random() * totalWeight;
-
-    // Find segment based on weights
-    for (let i = 0; i < SEGMENTS.length; i++) {
-      random -= SEGMENTS[i].weight;
-      if (random <= 0) {
-        return i;
-      }
-    }
-
-    // Fallback to last segment (shouldn't happen)
-    return SEGMENTS.length - 1;
-  }
-  
-
-  // ==================== MODAL MANAGEMENT ====================
-
-  /**
-   * Shows modal with proper visibility management
-   * @param {HTMLElement} modal - Modal element
-   */
   function showModal(modal) {
     modal.classList.remove("modal--hidden");
     modal.setAttribute("aria-hidden", "false");
-    // Focus first input if available
-    const input = modal.querySelector("input");
-    if (input) {
-      setTimeout(() => input.focus(), CONFIG.MODAL_ANIMATION_DURATION);
-    }
   }
 
-  /**
-   * Hides modal with proper visibility management
-   * @param {HTMLElement} modal - Modal element
-   */
   function hideModal(modal) {
     modal.classList.add("modal--hidden");
     modal.setAttribute("aria-hidden", "true");
   }
 
-  /**
-   * Shows ID validation modal
-   */
-  function showIdModal() {
-    DOM.idInput.value = "";
-    DOM.idError.textContent = "";
-    showModal(DOM.idModal);
+  function resetIdEntry() {
+    state.employeeId = "";
+    dom.idError.textContent = "";
+    updateIdDisplay();
   }
 
-  /**
-   * Shows winner display modal
-   * @param {string} reward - Winning reward
-   * @param {string} employeeId - Employee ID
-   */
-  function showWinnerModal(reward, employeeId) {
-    DOM.winnerPrize.textContent = reward;
-    DOM.claimEmployee.value = employeeId;
-    DOM.claimError.textContent = "";
-    showModal(DOM.winnerModal);
+  function updateIdDisplay() {
+    dom.idDisplay.textContent = state.employeeId || "Tap ID";
   }
 
-  /**
-   * Shows success/claim confirmation modal
-   * @param {string} employeeId - Employee ID
-   * @param {string} reward - Reward claimed
-   * @param {string} timestamp - Claim timestamp
-   */
-  function showSuccessModal(employeeId, reward, timestamp) {
-    DOM.sEmp.textContent = employeeId;
-    DOM.sReward.textContent = reward;
-    DOM.sTime.textContent = formatTimestamp(timestamp);
-    showModal(DOM.successModal);
+  function appendDigit(digit) {
+    if (state.employeeId.length >= CONFIG.maxEmployeeLength || state.isSpinning) return;
+    state.employeeId += digit;
+    dom.idError.textContent = "";
+    updateIdDisplay();
   }
 
-  // ==================== CONFETTI EFFECTS ====================
+  function backspaceId() {
+    if (state.isSpinning) return;
+    state.employeeId = state.employeeId.slice(0, -1);
+    updateIdDisplay();
+  }
 
-  /**
-   * Launches confetti animation on win
-   */
-  function launchConfetti() {
-    for (let i = 0; i < CONFIG.CONFETTI_COUNT; i++) {
-      const confetti = document.createElement("div");
-      confetti.className = "confetti-piece";
+  function clearId() {
+    if (state.isSpinning) return;
+    state.employeeId = "";
+    updateIdDisplay();
+  }
 
-      // Random position across top 30% of screen
-      confetti.style.left = Math.random() * 100 + "%";
-      confetti.style.top = Math.random() * 30 + "%";
+  function isEnteredIdValid() {
+    return state.employeeId.trim().length >= CONFIG.minEmployeeLength;
+  }
 
-      // Random size
-      const size = 6 + Math.random() * 10;
-      confetti.style.width = size + "px";
-      confetti.style.height = size + "px";
+  function resizeCanvas() {
+    const rect = dom.canvas.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
 
-      // Random color
-      confetti.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-
-      DOM.confettiContainer.appendChild(confetti);
-
-      // Animate confetti
-      const duration = CONFIG.CONFETTI_DURATION_MIN + Math.random() * CONFIG.CONFETTI_DURATION_MAX;
-      const rotations = 720 + Math.random() * 720;
-      const yDistance = 300 + Math.random() * 300;
-
-      confetti.animate(
-        [
-          {
-            transform: "translateY(0) rotate(0deg)",
-            opacity: 1,
-          },
-          {
-            transform: `translateY(${yDistance}px) rotate(${rotations}deg)`,
-            opacity: 0,
-          },
-        ],
-        {
-          duration: duration,
-          easing: "cubic-bezier(0.2, 0.7, 0.3, 1)",
-          fill: "forwards",
-        }
-      ).onfinish = () => confetti.remove();
+    if (dom.canvas.width !== width || dom.canvas.height !== height) {
+      dom.canvas.width = width;
+      dom.canvas.height = height;
     }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawWheel();
   }
 
-  /**
-   * Highlights the winning segment visually
-   * @param {number} index
-   */
+  function drawWheel() {
+    const rect = dom.canvas.getBoundingClientRect();
+    const size = Math.min(rect.width, rect.height);
+    const center = size / 2;
+    const radius = center - size * 0.035;
+    const segmentAngle = (Math.PI * 2) / SEGMENTS.length;
 
+    ctx.clearRect(0, 0, rect.width, rect.height);
 
+    SEGMENTS.forEach((segment, index) => {
+      const start = index * segmentAngle;
+      const end = start + segmentAngle;
+      drawSegment(index, start, end, center, radius);
+      drawLabel(segment.label, start, end, center, radius);
+    });
 
-  // ==================== BUTTON STATE MANAGEMENT ====================
-
-  /**
-   * Sets button loading state
-   * @param {boolean} isLoading
-   */
-  function setButtonLoading(isLoading) {
-    DOM.spinBtn.setAttribute("data-loading", isLoading);
-    DOM.spinBtn.disabled = isLoading;
+    drawRim(center, radius);
   }
 
-  /**
-   * Resets button to initial state
-   */
-  function resetButton() {
-    setButtonLoading(false);
-    DOM.result.textContent = "";
+  function drawSegment(index, start, end, center, radius) {
+    const colors = SEGMENT_COLORS[index % SEGMENT_COLORS.length];
+    const gradient = ctx.createRadialGradient(center, center, radius * 0.1, center, center, radius);
+    gradient.addColorStop(0, colors[2]);
+    gradient.addColorStop(0.46, colors[1]);
+    gradient.addColorStop(1, colors[0]);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, start, end);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.lineWidth = Math.max(3, radius * 0.012);
+    ctx.strokeStyle = "rgba(255, 235, 169, 0.92)";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, start, end);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.fill();
+    ctx.restore();
   }
 
-  // ==================== EVENT HANDLERS ====================
+  function drawLabel(label, start, end, center, radius) {
+    const angle = (start + end) / 2;
+    const fontSize = Math.max(18, Math.min(54, radius * 0.09));
+    const labelRadius = radius * 0.66;
+    const maxWidth = radius * 0.42;
 
-  /**
-   * Handles spin button click
-   */
-  async function handleSpinClick() {
-    if (STATE.isSpinning) {
-      console.warn("Already spinning");
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(angle);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `900 ${fontSize}px Montserrat, Arial, sans-serif`;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.82)";
+    ctx.lineWidth = Math.max(5, fontSize * 0.2);
+    ctx.fillStyle = "#fff7d6";
+    ctx.shadowColor = "rgba(255, 220, 116, 0.9)";
+    ctx.shadowBlur = fontSize * 0.24;
+    ctx.strokeText(label, labelRadius, 0, maxWidth);
+    ctx.fillText(label, labelRadius, 0, maxWidth);
+    ctx.restore();
+  }
+
+  function drawRim(center, radius) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(center, center, radius * 0.985, 0, Math.PI * 2);
+    ctx.lineWidth = Math.max(8, radius * 0.035);
+    ctx.strokeStyle = "#ffe9a3";
+    ctx.shadowColor = "rgba(255, 218, 102, 0.88)";
+    ctx.shadowBlur = radius * 0.04;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(center, center, radius * 0.25, 0, Math.PI * 2);
+    ctx.lineWidth = Math.max(4, radius * 0.012);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function getWinningSegment(rotation) {
+    const segmentAngle = 360 / SEGMENTS.length;
+    const pointerAngle = 270;
+    const wheelAngleAtPointer = normalizeAngle(pointerAngle - rotation);
+    return Math.floor(wheelAngleAtPointer / segmentAngle) % SEGMENTS.length;
+  }
+
+  function rotateWheelToSegment(targetSegmentIndex) {
+    return new Promise((resolve) => {
+      const segmentAngle = 360 / SEGMENTS.length;
+      const pointerAngle = 270;
+      const segmentCenter = targetSegmentIndex * segmentAngle + segmentAngle / 2;
+      const desiredRotation = normalizeAngle(pointerAngle - segmentCenter);
+      const currentBase = normalizeAngle(state.currentRotation);
+      const delta = normalizeAngle(desiredRotation - currentBase);
+      const fullRotations = 6 + Math.floor(Math.random() * 2);
+
+      state.currentRotation += fullRotations * 360 + delta;
+      dom.canvas.style.transition = `transform ${CONFIG.spinDuration}ms ${CONFIG.spinEasing}`;
+      dom.canvas.style.transform = `rotate(${state.currentRotation}deg)`;
+
+      window.setTimeout(() => {
+        resolve(getWinningSegment(state.currentRotation));
+      }, CONFIG.spinDuration);
+    });
+  }
+
+  async function requestJson(url, options) {
+    const response = await fetch(url, options);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || "Request failed");
+    }
+
+    return data;
+  }
+
+  async function confirmEmployeeId() {
+    const employeeId = state.employeeId.trim();
+
+    if (!isEnteredIdValid()) {
+      dom.idError.textContent = "Enter Player ID";
       return;
     }
 
-    // Show ID validation modal
-    showIdModal();
-  }
-
-  /**
-   * Validates employee ID and initiates spin
-   */
-  async function handleIdValidate() {
-    const emp = DOM.idInput.value.trim().toUpperCase();
-
-    if (!isValidEmployeeId(emp)) {
-      DOM.idError.textContent = "Invalid format. Use EMP001";
-      return;
-    }
-
-    DOM.idError.textContent = "Validating...";
+    dom.idError.textContent = "Validating";
+    dom.idConfirm.disabled = true;
 
     try {
-      const response = await fetch("/api/check-id", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: emp }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Validation failed");
-      }
-
-      STATE.employeeId = emp;
-      hideModal(DOM.idModal);
-
-      // Perform spin
-      await performSpin(emp);
-    } catch (error) {
-      DOM.idError.textContent = error.message || "Validation error";
-      console.error("ID Validation error:", error);
-    }
-  }
-
-  /**
-   * Performs the actual spin operation
-   * @param {string} employeeId
-   */
-  async function performSpin(employeeId) {
-    setButtonLoading(true);
-    DOM.result.textContent = "";
-
-    try {
-      // The server records and awards the prize. The wheel then lands on that exact segment.
-      const response = await fetch("/api/spin", {
+      await requestJson("/api/check-id", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employeeId }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Spin failed");
-      }
-
-      const targetSegmentIndex = Number(data.segment);
-      const awardedPrize = data.reward;
-      const selectedSegment = SEGMENTS[targetSegmentIndex];
-
-      if (!selectedSegment || selectedSegment.label !== awardedPrize) {
-        throw new Error("Awarded prize does not match a wheel segment");
-      }
-
-      // Rotate wheel to the selected segment
-      const winningSegmentIndex = await rotateWheelToSegment(targetSegmentIndex);
-      const winningSegment = SEGMENTS[winningSegmentIndex];
-
-      if (!winningSegment || winningSegment.label !== awardedPrize) {
-        throw new Error("Pointer winner does not match awarded prize");
-      }
-
-      // Show win effects
-      launchConfetti();
-      DOM.result.textContent = `🎉 YOU WON ${selectedSegment.label}`;
-
-      DOM.result.textContent = `YOU WON ${awardedPrize}`;
-
-      // Show winner modal with the exact server-awarded reward.
-      showWinnerModal(awardedPrize, employeeId);
+      hideModal(dom.idModal);
+      await performSpin(employeeId);
     } catch (error) {
-      console.error("Spin error:", error);
-      DOM.result.textContent = "❌ Spin failed. Please try again.";
-      DOM.result.textContent = "Spin failed. Please try again.";
-      setButtonLoading(false);
+      dom.idError.textContent = error.message;
+      setLoading(false);
+    } finally {
+      dom.idConfirm.disabled = false;
     }
   }
 
-  /**
-   * Handles reward claim
-   */
-  async function handleClaimReward() {
-    const emp = (DOM.claimEmployee.value || "").trim().toUpperCase();
-
-    if (!isValidEmployeeId(emp)) {
-      DOM.claimError.textContent = "Invalid Employee ID (EMP###)";
-      return;
-    }
-
-    DOM.claimError.textContent = "";
+  async function performSpin(employeeId) {
+    setLoading(true);
+    dom.result.textContent = "";
 
     try {
-      const response = await fetch("/api/claim", {
+      const data = await requestJson("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: emp }),
+        body: JSON.stringify({ employeeId }),
       });
 
-      const data = await response.json();
+      const targetSegmentIndex = Number(data.segment);
+      const awardedPrize = String(data.reward || "");
+      const targetSegment = SEGMENTS[targetSegmentIndex];
 
-      if (!response.ok) {
-        throw new Error(data.error || "Claim failed");
+      if (!targetSegment || targetSegment.label !== awardedPrize) {
+        throw new Error("Prize mapping failed");
       }
 
-      hideModal(DOM.winnerModal);
-      showSuccessModal(data.employee_id || emp, data.reward || DOM.winnerPrize.textContent, data.created_at);
+      const winningIndex = await rotateWheelToSegment(targetSegmentIndex);
 
-      // Reset for next spin
-      setTimeout(() => {
-        hideModal(DOM.successModal);
-        resetButton();
-      }, 3000);
+      if (winningIndex !== targetSegmentIndex || SEGMENTS[winningIndex].label !== awardedPrize) {
+        throw new Error("Pointer result mismatch");
+      }
+
+      dom.result.textContent = `YOU WON ${awardedPrize}`;
+      launchCelebration();
+      showWinnerModal(awardedPrize, employeeId);
     } catch (error) {
-      console.error("Claim error:", error);
-      DOM.claimError.textContent = error.message || "Claim failed";
+      dom.result.textContent = error.message || "Spin failed";
+      setLoading(false);
     }
   }
 
-  // ==================== EVENT LISTENERS ===== ====================
+  function showWinnerModal(reward, employeeId) {
+    dom.winnerPrize.textContent = reward;
+    dom.winnerEmployee.textContent = employeeId;
+    showModal(dom.winnerModal);
+  }
 
-  /**
-   * Sets up all event listeners
-   */
-  function setupEventListeners() {
-    // Spin button
-    DOM.spinBtn.addEventListener("click", handleSpinClick);
+  function finishWinner() {
+    hideModal(dom.winnerModal);
+    resetIdEntry();
+    setLoading(false);
+    dom.result.textContent = "";
+  }
 
-    // ID validation
-    DOM.idValidate.addEventListener("click", handleIdValidate);
-    DOM.idCancel.addEventListener("click", () => hideModal(DOM.idModal));
+  function launchCelebration() {
+    launchConfetti();
+    launchCoins();
+  }
 
-    // Enter key on ID input
-    DOM.idInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        handleIdValidate();
-      }
+  function launchConfetti() {
+    const colors = ["#fff7bd", "#ffd45e", "#d6a432", "#ffffff", "#f2c14e"];
+
+    for (let i = 0; i < CONFIG.confettiCount; i += 1) {
+      const piece = document.createElement("div");
+      const width = 8 + Math.random() * 18;
+      const height = 14 + Math.random() * 30;
+      const startX = 8 + Math.random() * 84;
+      const delay = Math.random() * 280;
+      const duration = 1300 + Math.random() * 1900;
+      const drift = -36 + Math.random() * 72;
+
+      piece.className = "confetti-piece";
+      piece.style.left = `${startX}%`;
+      piece.style.top = "-5vh";
+      piece.style.width = `${width}px`;
+      piece.style.height = `${height}px`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      dom.confetti.appendChild(piece);
+
+      piece.animate(
+        [
+          { transform: "translate3d(0, 0, 0) rotate(0deg)", opacity: 1 },
+          { transform: `translate3d(${drift}vw, 112vh, 0) rotate(${720 + Math.random() * 900}deg)`, opacity: 0 },
+        ],
+        { duration, delay, easing: "cubic-bezier(0.2, 0.75, 0.25, 1)", fill: "forwards" }
+      ).onfinish = () => piece.remove();
+    }
+  }
+
+  function launchCoins() {
+    for (let i = 0; i < CONFIG.coinCount; i += 1) {
+      const coin = document.createElement("div");
+      const direction = (Math.PI * 2 * i) / CONFIG.coinCount;
+      const distance = 22 + Math.random() * 44;
+      const x = Math.cos(direction) * distance;
+      const y = Math.sin(direction) * distance - 12;
+      const duration = 1050 + Math.random() * 1100;
+
+      coin.className = "coin";
+      coin.style.left = `${48 + Math.random() * 4}%`;
+      coin.style.top = `${45 + Math.random() * 8}%`;
+      dom.coins.appendChild(coin);
+
+      coin.animate(
+        [
+          { transform: "translate(-50%, -50%) scale(0.45) rotateY(0deg)", opacity: 1 },
+          { transform: `translate(calc(-50% + ${x}vw), calc(-50% + ${y}vh)) scale(1) rotateY(900deg)`, opacity: 0 },
+        ],
+        { duration, easing: "cubic-bezier(0.16, 0.9, 0.22, 1)", fill: "forwards" }
+      ).onfinish = () => coin.remove();
+    }
+  }
+
+  function createStars() {
+    const count = Math.min(180, Math.round((window.innerWidth * window.innerHeight) / 18000));
+    dom.stars.textContent = "";
+
+    for (let i = 0; i < count; i += 1) {
+      const star = document.createElement("span");
+      star.className = "star";
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDelay = `${Math.random() * 3}s`;
+      dom.stars.appendChild(star);
+    }
+  }
+
+  function createParticles() {
+    const count = 70;
+    dom.particles.textContent = "";
+
+    for (let i = 0; i < count; i += 1) {
+      const particle = document.createElement("span");
+      particle.className = "particle";
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.animationDuration = `${7 + Math.random() * 8}s`;
+      particle.style.animationDelay = `${Math.random() * 8}s`;
+      dom.particles.appendChild(particle);
+    }
+  }
+
+  function createLightRing() {
+    const count = 72;
+    dom.lightRing.textContent = "";
+
+    for (let i = 0; i < count; i += 1) {
+      const angle = ((Math.PI * 2) / count) * i - Math.PI / 2;
+      const light = document.createElement("span");
+      light.className = "light";
+      light.style.left = `${50 + Math.cos(angle) * 50}%`;
+      light.style.top = `${50 + Math.sin(angle) * 50}%`;
+      light.style.animationDelay = `${(i % 12) * 0.08}s`;
+      dom.lightRing.appendChild(light);
+    }
+  }
+
+  function handleKeypadClick(event) {
+    const button = event.target.closest("button");
+    if (!button) return;
+
+    const digit = button.dataset.key;
+    const action = button.dataset.action;
+
+    if (digit) appendDigit(digit);
+    if (action === "clear") clearId();
+    if (action === "backspace") backspaceId();
+  }
+
+  function setupBrandingFallbacks() {
+    document.querySelectorAll(".brand-slot__logo").forEach((logo) => {
+      const slot = logo.closest(".brand-slot");
+      logo.addEventListener("error", () => {
+        logo.style.display = "none";
+        if (slot) slot.classList.add("brand-slot--fallback");
+      });
+      logo.addEventListener("load", () => {
+        if (slot) slot.classList.remove("brand-slot--fallback");
+      });
     });
 
-    // Claim
-    DOM.claimBtn.addEventListener("click", handleClaimReward);
-    DOM.closeWinner.addEventListener("click", () => {
-      hideModal(DOM.winnerModal);
-      resetButton();
-    });
-
-    // Success modal
-    DOM.closeSuccess.addEventListener("click", () => {
-      hideModal(DOM.successModal);
-    });
-
-    // Handle window resize for responsive updates
-    window.addEventListener("resize", () => {
-      // Could implement responsive segment rebuild here if needed
-      console.log("Window resized");
-    });
-
-    // Prevent multiple clicks during animation
-    DOM.spinBtn.addEventListener("dblclick", (e) => {
-      e.preventDefault();
+    document.querySelectorAll(".anniversary-badge__logo").forEach((logo) => {
+      logo.addEventListener("error", () => {
+        logo.style.display = "none";
+      });
     });
   }
 
-  // ==================== INITIALIZATION ====================
+  function setupEvents() {
+    dom.spinBtn.addEventListener("click", () => {
+      if (state.isSpinning) return;
+      resetIdEntry();
+      showModal(dom.idModal);
+    });
 
-  /**
-   * Initializes the entire application
-   **/
-  async function init() {
-    console.log("Initializing COSMO Golden Spin...");
+    dom.idModal.addEventListener("click", handleKeypadClick);
+    dom.idConfirm.addEventListener("click", confirmEmployeeId);
+    dom.idCancel.addEventListener("click", () => hideModal(dom.idModal));
+    dom.closeWinner.addEventListener("click", finishWinner);
 
-    createStarField();
-    createParticleField();
+    window.addEventListener("resize", () => {
+      createLightRing();
+      resizeCanvas();
+    });
+  }
+
+  function init() {
+    setupBrandingFallbacks();
+    createStars();
+    createParticles();
     createLightRing();
     resizeCanvas();
-
-    window.addEventListener(
-     "resize",
-      resizeCanvas
-      );
-    
-
-    setupEventListeners();
-
-    console.log("Application initialized successfully");
+    setupEvents();
   }
 
-  // Start application when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
-  
 })();
