@@ -53,31 +53,17 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS claims (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      employee_id TEXT UNIQUE NOT NULL,
+      player_id TEXT UNIQUE NOT NULL,
       reward TEXT NOT NULL,
       segment INTEGER NOT NULL,
       created_at TEXT NOT NULL
     );
   `);
 
-  seedEmployees();
   seedRewards();
 }
 
-function seedEmployees() {
-  const insert = db.prepare('INSERT OR IGNORE INTO employees (employee_id) VALUES (?)');
-  const seed = db.transaction((ids) => {
-    ids.forEach((id) => insert.run(String(id)));
-  });
 
-  const ids = [];
-  for (let i = 1; i <= 200; i += 1) {
-    ids.push(String(i));
-    ids.push(`EMP${String(i).padStart(3, '0')}`);
-  }
-  ids.push('123', '5566', '88888888');
-  seed(ids);
-}
 
 function seedRewards() {
   if (!fs.existsSync(REWARDS_JSON)) {
@@ -101,23 +87,25 @@ function normalizeEmployeeId(employeeId) {
   return String(employeeId).trim();
 }
 
-function requireEmployeeId(req, res) {
-  const employeeId = normalizeEmployeeId(req.body && req.body.employeeId);
+function requirePlayerId(req, res) {
+  const playerId = normalizeEmployeeId(req.body && req.body.employeeId);
 
-  if (!employeeId || employeeId.length > 64) {
+  if (!playerId || playerId.length > 64) {
     res.status(400).json({ error: 'Player ID is required' });
     return null;
   }
 
-  return employeeId;
+  // Only accept numeric Player IDs
+  if (!/^\d+$/.test(playerId)) {
+    res.status(400).json({ error: 'Player ID must be numeric' });
+    return null;
+  }
+
+  return playerId;
 }
 
-function getEmployee(employeeId) {
-  return db.prepare('SELECT employee_id FROM employees WHERE employee_id = ?').get(employeeId);
-}
-
-function getExistingClaim(employeeId) {
-  return db.prepare('SELECT employee_id, reward, segment, created_at FROM claims WHERE employee_id = ?').get(employeeId);
+function getExistingClaim(playerId) {
+  return db.prepare('SELECT player_id, reward, segment, created_at FROM claims WHERE player_id = ?').get(playerId);
 }
 
 function selectWeightedReward() {
@@ -162,16 +150,11 @@ app.get('/api/rewards', (req, res) => {
 });
 
 app.post('/api/check-id', (req, res) => {
-  const employeeId = requireEmployeeId(req, res);
-  if (!employeeId) return;
+  const playerId = requirePlayerId(req, res);
+  if (!playerId) return;
 
-  if (!getEmployee(employeeId)) {
-    res.status(404).json({ error: 'Player ID not found' });
-    return;
-  }
-
-  if (getExistingClaim(employeeId)) {
-    res.status(409).json({ error: 'This Player ID has already claimed a reward' });
+  if (getExistingClaim(playerId)) {
+    res.status(409).json({ error: 'This Player ID has already participated.' });
     return;
   }
 
@@ -179,16 +162,11 @@ app.post('/api/check-id', (req, res) => {
 });
 
 app.post('/api/spin', (req, res) => {
-  const employeeId = requireEmployeeId(req, res);
-  if (!employeeId) return;
+  const playerId = requirePlayerId(req, res);
+  if (!playerId) return;
 
-  if (!getEmployee(employeeId)) {
-    res.status(404).json({ error: 'Player ID not found' });
-    return;
-  }
-
-  if (getExistingClaim(employeeId)) {
-    res.status(409).json({ error: 'This Player ID has already claimed a reward' });
+  if (getExistingClaim(playerId)) {
+    res.status(409).json({ error: 'This Player ID has already participated.' });
     return;
   }
 
@@ -205,7 +183,7 @@ app.post('/api/spin', (req, res) => {
   }
 
   const insertClaim = db.prepare(
-    'INSERT INTO claims (employee_id, reward, segment, created_at) VALUES (?, ?, ?, ?)'
+    'INSERT INTO claims (player_id, reward, segment, created_at) VALUES (?, ?, ?, ?)'
   );
   const decrementReward = db.prepare(
     'UPDATE rewards SET remaining = remaining - 1 WHERE id = ? AND remaining > 0'
@@ -214,7 +192,7 @@ app.post('/api/spin', (req, res) => {
   const transaction = db.transaction(() => {
     const info = decrementReward.run(selected.id);
     if (info.changes !== 1) throw new Error('Reward unavailable');
-    insertClaim.run(employeeId, selected.reward, segment, nowSql());
+    insertClaim.run(playerId, selected.reward, segment, nowSql());
   });
 
   try {
@@ -226,10 +204,10 @@ app.post('/api/spin', (req, res) => {
 });
 
 app.post('/api/claim', (req, res) => {
-  const employeeId = requireEmployeeId(req, res);
-  if (!employeeId) return;
+  const playerId = requirePlayerId(req, res);
+  if (!playerId) return;
 
-  const claim = getExistingClaim(employeeId);
+  const claim = getExistingClaim(playerId);
   if (!claim) {
     res.status(404).json({ error: 'No claim found' });
     return;
@@ -240,7 +218,7 @@ app.post('/api/claim', (req, res) => {
 
 app.get('/api/winners', (req, res) => {
   const rows = db
-    .prepare('SELECT employee_id, reward, segment, created_at FROM claims ORDER BY created_at DESC')
+    .prepare('SELECT player_id, reward, segment, created_at FROM claims ORDER BY created_at DESC')
     .all();
   res.json(rows);
 });
@@ -260,19 +238,19 @@ app.get('/api/dashboard', (req, res) => {
 
 app.get('/api/export', async (req, res) => {
   const claims = db
-    .prepare('SELECT employee_id, reward, created_at FROM claims ORDER BY created_at')
+    .prepare('SELECT player_id, reward, created_at FROM claims ORDER BY created_at')
     .all();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const csvPath = path.join(EXPORT_DIR, `winners-${timestamp}.csv`);
   const xlsPath = path.join(EXPORT_DIR, `winners-${timestamp}.xls`);
   const csvLines = [
     'Player ID,Reward,Claim Time',
-    ...claims.map((claim) => [claim.employee_id, claim.reward, claim.created_at].map(csvCell).join(',')),
+    ...claims.map((claim) => [claim.player_id, claim.reward, claim.created_at].map(csvCell).join(',')),
   ];
   const htmlRows = claims
     .map(
       (claim) =>
-        `<tr><td>${htmlCell(claim.employee_id)}</td><td>${htmlCell(claim.reward)}</td><td>${htmlCell(
+        `<tr><td>${htmlCell(claim.player_id)}</td><td>${htmlCell(claim.reward)}</td><td>${htmlCell(
           claim.created_at
         )}</td></tr>`
     )

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" role="img" aria-labelledby="title">
+  <title id="title">Anniversary</title>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff8ce"/>
+      <stop offset="0.48" stop-color="#f0bd3f"/>
+      <stop offset="1" stop-color="#8f570f"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="120" rx="18" fill="#071228"/>
+  <text x="120" y="76" text-anchor="middle" font-family="Georgia, serif" font-size="72" font-weight="700" fill="url(#gold)">1</text>
+  <circle cx="120" cy="61" r="48" fill="none" stroke="url(#gold)" stroke-width="8"/>
+</svg>

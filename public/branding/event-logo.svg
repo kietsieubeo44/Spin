@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" role="img" aria-labelledby="title">
+  <title id="title">Golden Spin Event</title>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff8ce"/>
+      <stop offset="0.5" stop-color="#f0bd3f"/>
+      <stop offset="1" stop-color="#8f570f"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="220" rx="18" fill="#071228"/>
+  <circle cx="320" cy="86" r="58" fill="none" stroke="url(#gold)" stroke-width="14"/>
+  <path d="M320 28v116M262 86h116M279 45l82 82M361 45l-82 82" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+  <text x="320" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="42" font-weight="700" letter-spacing="6" fill="url(#gold)">GOLDEN SPIN</text>
+</svg>
